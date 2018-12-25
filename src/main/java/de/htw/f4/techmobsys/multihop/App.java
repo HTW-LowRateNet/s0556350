@@ -15,7 +15,6 @@ import java.io.IOException;
 
 public class App {
     public static void main(String[] args) {
-
         final Serial serial = SerialFactory.createInstance();
 
         Console console = new Console();
@@ -38,13 +37,15 @@ public class App {
             config = CommandArgumentParser.getSerialConfig(config, args);
         }
 
-        MainController mainController = new MainController(console, serial);
-        mainController.init();
-        mainController.run();
+        Sender sender = new Sender(serial, console);
+        MainController mainController = new MainController(console, serial, sender);
 
-        SerialInputListener serialInputListener = new SerialInputListener(serial, console, mainController);
+
+
+
+        SerialInputListener serialInputListener = new SerialInputListener(serial, mainController, sender);
         Thread serialInputThread = new Thread(serialInputListener);
-        serialInputThread.start();
+        serialInputThread.run();
 
         UserInputListener userInputListener = new UserInputListener(console, mainController);
         Thread userInputListenerThread = new Thread(userInputListener);
@@ -53,5 +54,30 @@ public class App {
         CoordinatorClock coordinatorClock = new CoordinatorClock(mainController);
         Thread ccThread = new Thread(coordinatorClock);
         ccThread.start();
+
+
+//        console.emptyLine();
+//        String welcome = "Welcome to the Multihop Network implemantation by Samuel Erb";
+//
+//        for (int i = 0; i < welcome.length(); i++) {
+//            console.print(welcome.charAt(i));
+//            try {
+//                Thread.sleep(100);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        console.emptyLine();
+//        try {
+//            Thread.sleep(1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+
+
+//        sender.waitForReset();
+        mainController.init();
+        mainController.run();
     }
 }

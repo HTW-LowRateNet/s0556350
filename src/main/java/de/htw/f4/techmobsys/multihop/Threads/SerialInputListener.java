@@ -3,6 +3,7 @@ package de.htw.f4.techmobsys.multihop.Threads;
 import com.pi4j.io.serial.Serial;
 import com.pi4j.io.serial.SerialDataEventListener;
 import com.pi4j.util.Console;
+import de.htw.f4.techmobsys.multihop.Sender;
 import de.htw.f4.techmobsys.multihop.Controller.MainController;
 import de.htw.f4.techmobsys.multihop.beans.Message;
 import de.htw.f4.techmobsys.multihop.beans.MessageCode;
@@ -16,11 +17,13 @@ public class SerialInputListener implements Runnable {
     private Serial serial;
     private Console console;
     private MainController mainController;
+    private Sender sender;
 
-    public SerialInputListener(Serial serial, Console console, MainController mainController) {
+    public SerialInputListener(Serial serial, MainController mainController, Sender sender) {
         this.serial = serial;
-        this.console = console;
+        this.console = mainController.getConsole();
         this.mainController = mainController;
+        this.sender = sender;
     }
 
     /**
@@ -36,19 +39,22 @@ public class SerialInputListener implements Runnable {
      */
     @Override
     public void run() {
-
+//        console.println(this.toString() + " started!");
 
         // create and register the serial data listener
-        serial.addListener((SerialDataEventListener) event -> {
-            synchronized (MainController.serialLock) {
-                try {
-                    String data = event.getAsciiString();
+        this.serial.addListener((SerialDataEventListener) event -> {
+            try {
+                String data = event.getAsciiString();
+                console.println("[<-] " + data);
+
+                if (stringContainsMessage(data)) {
                     Message msg = convertAsciiToMessage(data);
                     mainController.addToMessageQueue(msg);
-                    MainController.serialLock.notifyAll();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } else {
+                    this.sender.addToQueue(data);
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
     }
@@ -72,9 +78,20 @@ public class SerialInputListener implements Runnable {
             String sender = messageArr[7];
             String receiver = messageArr[8];
             Message msg = new Message(mc, ttl, hops, sender, receiver, payload);
+            msg.raw = data;
             msg.setMessageID(messageID);
             return msg;
+        } else {
+            return new Message(data);
         }
-        return null;
+    }
+
+    private boolean stringContainsMessage(String data) {
+        String[] messageArr = data.split(",");
+        if (messageArr.length >= 7) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

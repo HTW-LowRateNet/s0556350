@@ -28,6 +28,7 @@ public class UserInputListener implements Runnable {
      */
     @Override
     public void run() {
+//        console.println(this.toString() + " started!");
         while (true) {
             Scanner scanner = new Scanner(System.in);
             while (scanner.hasNext()) {

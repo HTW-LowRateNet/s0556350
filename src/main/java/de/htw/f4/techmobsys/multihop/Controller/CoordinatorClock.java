@@ -9,7 +9,7 @@ public class CoordinatorClock implements Runnable {
 
     public CoordinatorClock(MainController mc) {
         this.mc = mc;
-        alivClockSpeed = 60;
+        alivClockSpeed = 10;
     }
 
 
@@ -26,7 +26,7 @@ public class CoordinatorClock implements Runnable {
      */
     @Override
     public void run() {
-        System.out.println("CoordinatorClockThread alive!");
+//        mc.getConsole().println(this.toString() + " started!");
 
         while (true) {
             if (MainController.coordinator) {

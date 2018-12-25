@@ -28,8 +28,11 @@ public class SerialInputProcessor implements Runnable {
      */
     @Override
     public void run() {
-        processIncomming(message);
-
+        if (message != null) {
+            processIncomming(message);
+        } else {
+            console.println("Message was in wrong format!");
+        }
     }
 
     public void processIncomming(Message msg) {
@@ -37,7 +40,7 @@ public class SerialInputProcessor implements Runnable {
         switch (msg.mc) {
             case KoordinatorDiscovery:
                 if (MainController.coordinator) {
-                    mainController.doCoordinatorStuff(msg);
+                    mainController.processCoordinatorWork(msg);
                 }
                 break;
             case ALIV:
@@ -46,7 +49,7 @@ public class SerialInputProcessor implements Runnable {
                 break;
             case POLL:
                 mainController.processPOLL(msg);
-                mainController.doCoordinatorStuff(msg);
+                mainController.processCoordinatorWork(msg);
                 break;
 
             case Message:
@@ -55,7 +58,7 @@ public class SerialInputProcessor implements Runnable {
 
             case Address:
 
-                mainController.doCoordinatorStuff(msg);
+                mainController.processCoordinatorWork(msg);
                 break;
 
             case NeigbourDiscovery:

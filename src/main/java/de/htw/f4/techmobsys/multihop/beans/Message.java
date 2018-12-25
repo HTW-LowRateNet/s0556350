@@ -15,6 +15,7 @@ public class Message {
     public String payload;
     public String srcAddress;
     public String dstAddress;
+    public String raw;
 
     public Message(MessageCode mc, int ttl, int hops, String sender, String receiver, String payload) {
         this.mc = mc;
@@ -26,6 +27,10 @@ public class Message {
         this.payload = payload;
         this.srcAddress = MainController.sourceAddress;
         this.dstAddress = MainController.destinationAddress;
+    }
+
+    public Message(String raw) {
+        this.raw = raw;
     }
 
     public void setMessageID(String messageID) {
