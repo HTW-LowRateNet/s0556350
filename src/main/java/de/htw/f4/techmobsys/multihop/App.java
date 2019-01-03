@@ -76,7 +76,7 @@ public class App {
 //        }
 
 
-//        sender.waitForReset();
+        sender.waitForReset();
         mainController.init();
         mainController.run();
     }

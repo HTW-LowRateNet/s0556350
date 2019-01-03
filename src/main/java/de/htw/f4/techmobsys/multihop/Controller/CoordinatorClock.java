@@ -1,6 +1,8 @@
 package de.htw.f4.techmobsys.multihop.Controller;
 
 
+import de.htw.f4.techmobsys.multihop.beans.NodeState;
+
 public class CoordinatorClock implements Runnable {
 
     public final int alivClockSpeed;
@@ -9,7 +11,7 @@ public class CoordinatorClock implements Runnable {
 
     public CoordinatorClock(MainController mc) {
         this.mc = mc;
-        alivClockSpeed = 10;
+        alivClockSpeed = 5 * 60 * 1000;
     }
 
 
@@ -29,7 +31,7 @@ public class CoordinatorClock implements Runnable {
 //        mc.getConsole().println(this.toString() + " started!");
 
         while (true) {
-            if (MainController.coordinator) {
+            if (MainController.coordinator == NodeState.COORDINATOR) {
                 mc.sendALIV();
                 try {
                     Thread.sleep(alivClockSpeed * 1000);

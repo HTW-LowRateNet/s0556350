@@ -2,6 +2,7 @@ package de.htw.f4.techmobsys.multihop.Controller;
 
 import com.pi4j.util.Console;
 import de.htw.f4.techmobsys.multihop.beans.Message;
+import de.htw.f4.techmobsys.multihop.beans.NodeState;
 
 
 public class SerialInputProcessor implements Runnable {
@@ -39,7 +40,7 @@ public class SerialInputProcessor implements Runnable {
         console.box(3, "Processing", msg.toString());
         switch (msg.mc) {
             case KoordinatorDiscovery:
-                if (MainController.coordinator) {
+                if (MainController.coordinator == NodeState.COORDINATOR) {
                     mainController.processCoordinatorWork(msg);
                 }
                 break;

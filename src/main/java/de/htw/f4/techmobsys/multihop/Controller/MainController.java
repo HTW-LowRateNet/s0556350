@@ -5,6 +5,7 @@ import com.pi4j.util.Console;
 import de.htw.f4.techmobsys.multihop.Sender;
 import de.htw.f4.techmobsys.multihop.beans.Message;
 import de.htw.f4.techmobsys.multihop.beans.MessageCode;
+import de.htw.f4.techmobsys.multihop.beans.NodeState;
 
 import java.util.LinkedList;
 import java.util.Random;
@@ -12,13 +13,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class MainController {
-    public static String sourceAddress;
+    public static String myAddress;
     public static String destinationAddress;
     /**
      * coordinator is false if the state is node
      * else we are the coordinator
      */
-    public static boolean coordinator = false;
+    public static NodeState coordinator = NodeState.NEW;
     //    Config variables
     private final String coordinatorAddress = "0000";
     private final String broadcastAddress = "FFFF";
@@ -29,7 +30,7 @@ public class MainController {
     private Serial serial;
     private Sender sender;
 
-    private LinkedList<Message> queue = new LinkedList<>();
+    private LinkedList<Message> messageQueue = new LinkedList<>();
     private LinkedList<String> addressList;
 
 
@@ -43,9 +44,7 @@ public class MainController {
         String configString = "433000000,20,9,10,1,1,0,0,0,0,3000,8,4";
         System.out.println("init");
         this.sender.writeCFG(configString);
-//        serialWrite(ATInstructions.getAT_CFG(configString));
         this.sender.writeSAVE();
-//        serialWrite(ATInstructions.getAT_SAVE());
         try {
             this.doCDIS();
         } catch (InterruptedException e) {
@@ -59,9 +58,9 @@ public class MainController {
 
     public void run() {
         while (console.isRunning()) {
-            if (!queue.isEmpty()) {
+            if (!messageQueue.isEmpty()) {
                 SerialInputProcessor sip =
-                        new SerialInputProcessor(this, queue.removeFirst());
+                        new SerialInputProcessor(this, messageQueue.removeFirst());
                 Thread thread = new Thread(sip);
                 thread.start();
             }
@@ -69,7 +68,7 @@ public class MainController {
     }
 
     public void addToMessageQueue(Message msg) {
-        this.queue.add(msg);
+        this.messageQueue.add(msg);
     }
 
     public void processCoordinatorWork(Message msg) {
@@ -91,7 +90,7 @@ public class MainController {
                         new Message(MessageCode.Address,
                                 standardTTL,
                                 0,
-                                sourceAddress,
+                                myAddress,
                                 msg.sender,
                                 addr));
                 break;
@@ -107,8 +106,8 @@ public class MainController {
     public void doCDIS() throws InterruptedException {
 //        console.println("CDIS");
 
-        sourceAddress = this.getRandomAddress(0x0011, 0x00FF);
-        setSrcAddr(sourceAddress);
+        myAddress = this.getRandomAddress(0x0011, 0x00FF);
+        setSrcAddr(myAddress);
 
         AtomicBoolean reply = new AtomicBoolean(false);
         for (int iteration = 0; iteration < 3; iteration++) {
@@ -117,27 +116,19 @@ public class MainController {
                             MessageCode.KoordinatorDiscovery,
                             standardTTL,
                             0,
-                            sourceAddress,
+                            myAddress,
                             broadcastAddress,
                             "Hallo i bims"));
             Thread.sleep(200);
-            this.queue.stream()
+            this.messageQueue.stream()
                     .filter(msg -> msg.mc == MessageCode.ALIV && msg.sender.equals(coordinatorAddress))
                     .findFirst()
                     .ifPresent(msg -> {
-//                        Im not the coordinator
-                        coordinator = false;
-                        addressList = null;
-                        try {
-                            processADDR();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        queue.remove(msg);
-                        reply.set(true);
+                        reply.set(processALIV(msg));
+
                     });
             try {
-                Thread.sleep(1000);
+                Thread.sleep(20 * 1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -147,15 +138,15 @@ public class MainController {
         }
 
         if (!reply.get()) {
-            if (!coordinator) {
-                coordinator = true;
+            if (coordinator != NodeState.COORDINATOR) {
+                coordinator = NodeState.COORDINATOR;
                 addressList = new LinkedList<>();
             }
         }
         console.title("Coordinator: " + coordinator);
     }
 
-    public void processADDR() throws InterruptedException {
+    public boolean doADDR() throws InterruptedException {
 //        console.box("ADDR");
 
         AtomicBoolean reply = new AtomicBoolean(false);
@@ -165,39 +156,62 @@ public class MainController {
                             MessageCode.Address,
                             standardTTL,
                             0,
-                            sourceAddress,
+                            myAddress,
                             destinationAddress,
                             "Mach ma ne Adresse klar!"));
             Thread.sleep(200);
-            this.queue.stream()
+            this.messageQueue.stream()
                     .filter(msg -> msg.mc == MessageCode.Address && msg.sender.equals(coordinatorAddress))
                     .findFirst()
                     .ifPresent(msg -> {
 //                        setSrcAddr(msg.payload);
-                        queue.remove(msg);
+                        messageQueue.remove(msg);
                         reply.set(true);
-                        sendMessage(coordinatorAddress,
-                                new Message(
-                                        MessageCode.AACK,
-                                        standardTTL,
-                                        0,
-                                        sourceAddress,
-                                        coordinatorAddress,
-                                        "Danke fuer die Addresse"));
+                        doACKK();
                     });
             if (reply.get()) {
                 break;
             }
+            Thread.sleep(20 * 1000);
         }
 
         if (!reply.get()) {
             doCDIS();
         }
 
+        return reply.get();
     }
 
-    public void processALIV(Message msg) {
-//        TODO
+    public void doACKK() {
+        sendMessage(coordinatorAddress,
+                new Message(
+                        MessageCode.AACK,
+                        standardTTL,
+                        0,
+                        myAddress,
+                        coordinatorAddress,
+                        "Danke fuer die Addresse"));
+        coordinator = NodeState.CLIENT;
+    }
+
+    public boolean processALIV(Message msg) {
+//        TODO set State to node and generate a random address 0010 - 00FF
+        //                        Im not the coordinator
+        if (coordinator == NodeState.NEW) {
+            myAddress = getRandomAddress(0x0010, 0x00FF);
+        }
+
+        if (coordinator == NodeState.COORDINATOR) {
+            addressList = null;
+        }
+        boolean gotReply = false;
+        try {
+            gotReply = doADDR();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        messageQueue.remove(msg);
+        return gotReply;
     }
 
     public void processPOLL(Message msg) {
@@ -205,7 +219,9 @@ public class MainController {
     }
 
     public void processMSG(Message msg) {
-//        TODO
+        this.console.title("Message Received",
+                "Sender: " + msg.sender, "Content:",
+                msg.payload, "", "", " RAW: " + msg.toString());
     }
 
     public void sendALIV() {
@@ -215,7 +231,7 @@ public class MainController {
                         MessageCode.ALIV,
                         standardTTL,
                         0,
-                        sourceAddress,
+                        myAddress,
                         broadcastAddress,
                         "Hallo i bims noch da"));
     }
@@ -225,8 +241,8 @@ public class MainController {
      * Some handy helper functions.
      */
     private void setSrcAddr(String addr) {
-        sourceAddress = addr;
-//        serialWrite(ATInstructions.getAT_ADDR(sourceAddress));
+        myAddress = addr;
+//        serialWrite(ATInstructions.getAT_ADDR(myAddress));
     }
 
     private void setDestinationAddress(String addr) {
@@ -235,7 +251,7 @@ public class MainController {
 
     void sendMessage(String dstAddress, Message s) {
         setDestinationAddress(dstAddress);
-        s.dstAddress = dstAddress;
+        s.receiver = dstAddress;
         this.sender.sendMessage(s.toString());
 //        serialWrite(ATInstructions.getAT_SEND(String.valueOf(s.length())));
 //        serialWrite(s);

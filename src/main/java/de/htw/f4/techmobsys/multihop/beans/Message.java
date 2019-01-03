@@ -13,8 +13,6 @@ public class Message {
     public String sender;
     public String receiver;
     public String payload;
-    public String srcAddress;
-    public String dstAddress;
     public String raw;
 
     public Message(MessageCode mc, int ttl, int hops, String sender, String receiver, String payload) {
@@ -25,8 +23,6 @@ public class Message {
         this.sender = sender;
         this.receiver = receiver;
         this.payload = payload;
-        this.srcAddress = MainController.sourceAddress;
-        this.dstAddress = MainController.destinationAddress;
     }
 
     public Message(String raw) {
@@ -40,6 +36,6 @@ public class Message {
     @Override
     public String toString() {
         String sp = ",";
-        return mc.getCode() + sp + messageID + sp + String.valueOf(ttl) + sp + String.valueOf(hops) + sp + srcAddress + sp + dstAddress + sp + payload + sp;
+        return mc.getCode() + sp + messageID + sp + String.valueOf(ttl) + sp + String.valueOf(hops) + sp + sender + sp + receiver + sp + payload + sp;
     }
 }

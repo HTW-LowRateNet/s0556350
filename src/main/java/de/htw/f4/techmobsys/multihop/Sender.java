@@ -70,7 +70,7 @@ public class Sender {
         writeSEND(message.length());
 
         synchronized (sendLock) {
-            this.console.box(31, "Lock");
+//            this.console.box(31, "Lock");
 //            this.console.println("++++++++++++++++Lock++++++++++++++++");
             try {
                 this.serial.write(message);
@@ -86,7 +86,7 @@ public class Sender {
 
             boolean sendFinished = false;
             while (!sendFinished) {
-                this.console.println("Wait for : " + "SENDING");
+//                this.console.println("Wait for : " + "SENDING");
                 while (replyQueue.isEmpty()) {
                     try {
                         Thread.sleep(10);
@@ -98,7 +98,7 @@ public class Sender {
                 if (replyQueue.getFirst().contains("SENDING")) {
                     replyQueue.removeFirst();
                     sendFinished = true;
-                    this.console.println("Found: " + "SENDING");
+//                    this.console.println("Found: " + "SENDING");
                 } else {
                     replyQueue.removeFirst();
                 }
@@ -106,7 +106,7 @@ public class Sender {
 
             sendFinished = false;
             while (!sendFinished) {
-                this.console.println("Wait for : " + "SENDED");
+//                this.console.println("Wait for : " + "SENDED");
 
 //                this.console.println("->");
                 while (replyQueue.isEmpty()) {
@@ -120,7 +120,7 @@ public class Sender {
                 if (replyQueue.getFirst().contains("SENDED")) {
                     replyQueue.removeFirst();
                     sendFinished = true;
-                    this.console.println("Found: " + "SENDED");
+//                    this.console.println("Found: " + "SENDED");
                 } else {
                     this.console.println("-> " + replyQueue.getFirst());
                     replyQueue.removeFirst();
@@ -131,7 +131,7 @@ public class Sender {
 //                    this.console.println("\n");
 //                });
             }
-            this.console.box(30, "UnLock");
+//            this.console.box(30, "UnLock");
 //            this.console.println("++++++++++++++++UnLock++++++++++++++++");
         }
     }
@@ -155,7 +155,7 @@ public class Sender {
         this.console.println("[->] " + message);
         boolean sendFinished = false;
         synchronized (sendLock) {
-            this.console.box(31, "Lock");
+//            this.console.box(31, "Lock");
 //            this.console.println("++++++++++++++++Lock++++++++++++++++");
             try {
                 this.serial.write(message);
@@ -169,7 +169,7 @@ public class Sender {
             }
 
 
-            this.console.println("Wait for : " + reply);
+//            this.console.println("Wait for : " + reply);
             while (!sendFinished) {
 
                 while (replyQueue.isEmpty()) {
@@ -184,12 +184,12 @@ public class Sender {
                 if (replyQueue.getFirst().contains(reply)) {
                     replyQueue.removeFirst();
                     sendFinished = true;
-                    this.console.println("Found: " + reply);
+//                    this.console.println("Found: " + reply);
                 } else {
                     replyQueue.removeFirst();
                 }
             }
-            this.console.box(30, "UnLock");
+//            this.console.box(30, "UnLock");
 //            this.console.println("++++++++++++++++UnLock++++++++++++++++");
         }
     }
